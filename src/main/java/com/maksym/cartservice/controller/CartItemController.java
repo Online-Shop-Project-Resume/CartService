@@ -2,41 +2,44 @@ package com.maksym.cartservice.controller;
 
 import com.maksym.cartservice.dto.CartItemRequest;
 import com.maksym.cartservice.model.CartItem;
-import com.maksym.cartservice.service.CartItemService;
+import com.maksym.cartservice.service.CartItemServiceImpl;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("api/cart-item")
+@RequestMapping("/api/cart-item")
 public class CartItemController {
 
-    private final CartItemService cartItemService;
+    private final CartItemServiceImpl cartItemService;
 
-    @Autowired
-    public CartItemController(CartItemService cartItemService) {
+    public CartItemController(CartItemServiceImpl cartItemService) {
         this.cartItemService = cartItemService;
     }
 
     @GetMapping
-    public List<CartItem> getAllCartItems() {
-        return cartItemService.getAll();
+    public ResponseEntity<List<CartItem>> getAllCartItems() {
+        return new ResponseEntity<>(cartItemService.getAll(), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    public CartItem getCartItemById(@PathVariable Long id) {
-        return cartItemService.getById(id);
+    public ResponseEntity<CartItem> getCartItemById(@PathVariable Long id) {
+        return new ResponseEntity<>(cartItemService.getById(id), HttpStatus.OK);
     }
 
     @PostMapping
-    public CartItem createCartItem(@RequestBody CartItemRequest cartItemRequest) {
-        return cartItemService.create(cartItemRequest);
+    public ResponseEntity<CartItem> createCartItem(@RequestBody @Valid CartItemRequest cartItemRequest) {
+        return new ResponseEntity<>(cartItemService.create(cartItemRequest), HttpStatus.CREATED);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteCartItemById(@PathVariable Long id) {
+    public ResponseEntity deleteCartItemById(@PathVariable Long id) {
         cartItemService.deleteById(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }
 

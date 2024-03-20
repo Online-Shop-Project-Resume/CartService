@@ -12,4 +12,6 @@ public interface CartItemService {
     public CartItem getById(Long id);
     public CartItem create(CartItemRequest cartItemRequest);
     public void deleteById(Long id);
+
+    void deleteByCartId(Long id);
 }

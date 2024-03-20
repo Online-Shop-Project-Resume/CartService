@@ -10,10 +10,10 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class CarItemServiceImpl implements CartItemService{
+public class CartItemServiceImpl implements CartItemService{
     private final CartItemRepository cartItemRepository;
 
-    public CarItemServiceImpl(CartItemRepository cartItemRepository) {
+    public CartItemServiceImpl(CartItemRepository cartItemRepository) {
         this.cartItemRepository = cartItemRepository;
     }
 
@@ -36,5 +36,10 @@ public class CarItemServiceImpl implements CartItemService{
     @Override
     public void deleteById(Long id) {
         cartItemRepository.deleteById(id);
+    }
+
+    @Override
+    public void deleteByCartId(Long cart_id) {
+        cartItemRepository.deleteAllByCart_Id(cart_id);
     }
 }

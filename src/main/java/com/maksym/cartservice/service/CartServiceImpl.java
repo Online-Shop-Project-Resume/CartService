@@ -12,9 +12,11 @@ import java.util.List;
 public class CartServiceImpl implements CartService{
 
     private final CartRepository cartRepository;
+    private final CartItemServiceImpl cartItemService;
 
-    public CartServiceImpl(CartRepository cartRepository) {
+    public CartServiceImpl(CartRepository cartRepository, CartItemServiceImpl cartItemService) {
         this.cartRepository = cartRepository;
+        this.cartItemService = cartItemService;
     }
 
     @Override
@@ -34,8 +36,8 @@ public class CartServiceImpl implements CartService{
     }
 
     @Override
-    public Cart emptyById(Long id) {
-        return null;
+    public void emptyById(Long cartId) {
+        cartItemService.deleteByCartId(cartId);
     }
 
     @Override

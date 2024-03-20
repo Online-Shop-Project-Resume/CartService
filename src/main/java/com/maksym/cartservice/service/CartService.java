@@ -9,6 +9,6 @@ public interface CartService {
     List<Cart> getAll();
     Cart getById(Long id);
     Cart add(CartRequest cartRequest);
-    Cart emptyById(Long id);
+    void emptyById(Long id);
     void deleteById(Long id);
 }
