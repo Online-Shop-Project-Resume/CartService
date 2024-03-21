@@ -1,5 +1,5 @@
 server:
-  port: 8083
+  port: 8084
 
 spring:
   application:
@@ -13,11 +13,6 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: true
-
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: http://discovery-server:8761/eureka/
 
 management:
   endpoints:
