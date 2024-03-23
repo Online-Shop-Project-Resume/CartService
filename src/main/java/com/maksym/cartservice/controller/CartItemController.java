@@ -18,11 +18,9 @@ import java.util.List;
 public class CartItemController {
 
     private final CartItemServiceImpl cartItemService;
-    private final ProductService productService;
 
     public CartItemController(CartItemServiceImpl cartItemService, ProductService productService) {
         this.cartItemService = cartItemService;
-        this.productService = productService;
     }
 
     @GetMapping
@@ -37,11 +35,6 @@ public class CartItemController {
 
     @PostMapping
     public ResponseEntity<CartItem> createCartItem(@RequestBody @Valid CartItemRequest cartItemRequest) {
-        //Check if product exists
-        Boolean existsProduct = productService.existsProduct(cartItemRequest.getProductId()).getBody();
-        if(existsProduct==null || !existsProduct)
-            throw new EntityNotFoundException("Product with id: " + cartItemRequest.getProductId() + " doesn't exist");
-
         return new ResponseEntity<>(cartItemService.create(cartItemRequest), HttpStatus.CREATED);
     }
 

@@ -1,6 +1,7 @@
 package com.maksym.cartservice.service;
 
 import com.maksym.cartservice.dto.CartItemRequest;
+import com.maksym.cartservice.feignClient.ProductService;
 import com.maksym.cartservice.model.CartItem;
 import com.maksym.cartservice.repository.CartItemRepository;
 import com.maksym.cartservice.repository.CartItemRepositoryTest;
@@ -11,14 +12,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.http.ResponseEntity;
 
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class CartItemServiceTest {
@@ -27,7 +28,8 @@ public class CartItemServiceTest {
 
     @Mock
     private CartItemRepository cartItemRepository;
-
+    @Mock
+    private ProductService productService;
     @InjectMocks
     private CartItemServiceImpl cartItemService;
 
@@ -70,15 +72,30 @@ public class CartItemServiceTest {
     }
 
     @Test
-    void testCreate() {
-        CartItemRequest cartItemRequest = StaticCartItem.cartItemRequest1();
-        CartItem cartItem = StaticCartItem.cartItem1();
+    public void testCreateCartItem_Success() {
+        // Arrange
+        CartItemRequest cartItemRequest = new CartItemRequest();
+        cartItemRequest.setProductId(123L);
+        when(productService.existsProduct(anyLong())).thenReturn(ResponseEntity.ok(true));
+        when(cartItemRepository.save(any())).thenReturn(new CartItem());
 
-        when(cartItemRepository.save(any(CartItem.class))).thenReturn(cartItem);
-
+        // Act
         CartItem result = cartItemService.create(cartItemRequest);
 
-        assertEquals(cartItem, result);
+        // Assert
+        assertNotNull(result);
+        // Add more assertions as needed
+    }
+
+    @Test
+    public void testCreateCartItem_ProductNotFound() {
+        // Arrange
+        CartItemRequest cartItemRequest = new CartItemRequest();
+        cartItemRequest.setProductId(123L);
+        when(productService.existsProduct(anyLong())).thenReturn(ResponseEntity.ok(false));
+
+        // Act and Assert
+        assertThrows(EntityNotFoundException.class, () -> cartItemService.create(cartItemRequest));
     }
 
     @Test

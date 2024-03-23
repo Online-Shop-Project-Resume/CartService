@@ -2,6 +2,7 @@ package com.maksym.cartservice.service;
 
 import com.maksym.cartservice.dto.CartItemRequest;
 import com.maksym.cartservice.dtoMapper.CartItemMapper;
+import com.maksym.cartservice.feignClient.ProductService;
 import com.maksym.cartservice.model.CartItem;
 import com.maksym.cartservice.repository.CartItemRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -15,8 +16,11 @@ import java.util.List;
 public class CartItemServiceImpl implements CartItemService{
     private final CartItemRepository cartItemRepository;
 
-    public CartItemServiceImpl(CartItemRepository cartItemRepository) {
+    private final ProductService productService;
+
+    public CartItemServiceImpl(CartItemRepository cartItemRepository, ProductService productService) {
         this.cartItemRepository = cartItemRepository;
+        this.productService = productService;
     }
 
     @Override
@@ -34,6 +38,9 @@ public class CartItemServiceImpl implements CartItemService{
     @Override
     public CartItem create(CartItemRequest cartItemRequest) {
         log.info("CartItem create: {}", cartItemRequest);
+        Boolean existsProduct = productService.existsProduct(cartItemRequest.getProductId()).getBody();
+        if(existsProduct==null || !existsProduct)
+            throw new EntityNotFoundException("Product with id: " + cartItemRequest.getProductId() + " doesn't exist");
         CartItem cartItem = CartItemMapper.toModel(cartItemRequest);
         return cartItemRepository.save(cartItem);
     }
