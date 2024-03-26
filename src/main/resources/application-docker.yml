@@ -4,12 +4,10 @@ server:
 spring:
   application:
     name: cart-service
-  profiles:
-    active: ${SPRING_PROFILE:default}
   datasource:
     username: ${MYSQL_USERNAME:root}
     password: ${MYSQL_PASSWORD:password}
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/online-shop
+    url: jdbc:mysql://mysql_db:3306/online-shop
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -29,8 +27,8 @@ management:
       probability: 1.0
   zipkin:
     tracing:
-      endpoint: ${ZIPKIN_URL:http://localhost:9411/api/v2/spans}
+      endpoint: ${ZIPKIN_URL:http://zipkin:9411/api/v2/spans}
 eureka:
   client:
     serviceUrl:
-      defaultZone: ${DISCOVERY_SERVER_URL:http://localhost:8761/eureka}
+      defaultZone: ${DISCOVERY_SERVER_URL:http://discovery-server:8761/eureka}
