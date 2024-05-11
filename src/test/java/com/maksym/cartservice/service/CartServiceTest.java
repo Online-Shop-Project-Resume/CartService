@@ -1,32 +1,35 @@
 package com.maksym.cartservice.service;
 
-import com.maksym.cartservice.dto.CartRequest;
+
+import com.maksym.cartservice.exception.EntityNotFoundException;
 import com.maksym.cartservice.model.Cart;
 import com.maksym.cartservice.repository.CartRepository;
 import com.maksym.cartservice.staticObject.StaticCart;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-public class CartServiceTest {
+class CartServiceTest {
 
-    private final long id = 1L;
     @Mock
     private CartRepository cartRepository;
-
     @InjectMocks
-    private CartServiceImpl cartService;
+    private CartService cartService;
+    private final Cart cart = StaticCart.cart1();
+    private final Cart cart2 = StaticCart.cart2();
 
     @BeforeEach
     void setUp() {
@@ -34,58 +37,112 @@ public class CartServiceTest {
     }
 
     @Test
+    void testCreate() {
+	    when(cartRepository.save(any(Cart.class))).thenReturn(cart);
+
+        Cart createdCart = cartService.create(cart);
+
+        assertNotNull(createdCart);
+        assertEquals(cart, createdCart);
+        verify(cartRepository, times(1)).save(cart);
+    }
+
+    @Test
+    void testCreate_DataAccessException() {
+        when(cartRepository.findById(StaticCart.ID)).thenThrow(new DataAccessException("Database connection failed") {
+        });
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> cartService.getById(StaticCart.ID));
+
+        assertNotNull(exception);
+        assertEquals("Database connection failed", exception.getMessage());
+        verify(cartRepository, times(1)).findById(StaticCart.ID);
+    }
+
+    @Test
     void testGetAll() {
-        List<Cart> expectedCarts = new ArrayList<>();
-        expectedCarts.add(StaticCart.cart1());
+        List<Cart> cartList = new ArrayList<>();
+        cartList.add(cart);
+        cartList.add(cart2);
+        Page<Cart> cartPage = new PageImpl<>(cartList);
+        Pageable pageable = Pageable.unpaged();
+        when(cartRepository.findAll(pageable)).thenReturn(cartPage);
 
-        when(cartRepository.findAll()).thenReturn(expectedCarts);
+        Page<Cart> result = cartService.getAll(pageable);
 
-        List<Cart> actualCarts = cartService.getAll();
-
-        assertEquals(expectedCarts.size(), actualCarts.size());
-        assertEquals(expectedCarts.get(0).getId(), actualCarts.get(0).getId());
-        assertEquals(expectedCarts.get(0).getUserId(), actualCarts.get(0).getUserId());
+        assertEquals(cartList.size(), result.getSize());
+        assertEquals(cart, result.getContent().get(0));
+        assertEquals(cart2, result.getContent().get(1));
     }
 
     @Test
-    void testGetById_ExistingId() {
-        Cart expectedCart = StaticCart.cart1();
+    void testGetAll_AnyException() {
+        when(cartRepository.findAll(any(Pageable.class))).thenThrow(new DataAccessException("Database connection failed") {});
 
-        when(cartRepository.findById(id)).thenReturn(Optional.of(expectedCart));
+        Pageable pageable = Pageable.unpaged();
+        RuntimeException exception = assertThrows(DataAccessException.class, () -> cartService.getAll(pageable));
 
-        Cart actualCart = cartService.getById(id);
-
-        assertEquals(expectedCart.getId(), actualCart.getId());
-        assertEquals(expectedCart.getUserId(), actualCart.getUserId());
+        assertNotNull(exception);
+        assertEquals("Database connection failed", exception.getMessage());
+        verify(cartRepository, times(1)).findAll(any(Pageable.class));
     }
 
     @Test
-    void testGetById_NonExistingId() {
-        when(cartRepository.findById(id)).thenReturn(Optional.empty());
+    void testUpdate_Success() {
+	    Cart existingCart = StaticCart.cart1();
+        Cart updatedCart = StaticCart.cart2();
+	    when(cartRepository.findById(StaticCart.ID)).thenReturn(java.util.Optional.of(existingCart));
+        when(cartRepository.save(updatedCart)).thenReturn(updatedCart);
 
-        assertThrows(EntityNotFoundException.class, () -> cartService.getById(id));
+        Cart result = cartService.updateById(StaticCart.ID, updatedCart);
+
+        assertEquals(updatedCart, result);
+        verify(cartRepository, times(1)).findById(StaticCart.ID);
+        verify(cartRepository, times(1)).save(updatedCart);
+    }
+
+
+    @Test
+    void testUpdateById_EntityNotFoundException() {
+        Cart updatedCart = StaticCart.cart1();
+        when(cartRepository.findById(StaticCart.ID)).thenReturn(java.util.Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> cartService.updateById(StaticCart.ID, updatedCart));
+        verify(cartRepository, times(1)).findById(StaticCart.ID);
+        verify(cartRepository, never()).save(updatedCart);
     }
 
     @Test
-    void testAdd() {
-        CartRequest cartRequest = StaticCart.cartRequest();
-        Cart expectedCart = StaticCart.cart1();
+    void testUpdateById_AnyException() {
+        Cart existingCart = StaticCart.cart1();
+        Cart updatedCart = StaticCart.cart2();
+        when(cartRepository.findById(StaticCart.ID)).thenReturn(java.util.Optional.of(existingCart));
+	    when(cartRepository.save(updatedCart)).thenThrow(new DataAccessException("Database connection failed") {
+        });
 
-        when(cartRepository.save(any())).thenReturn(expectedCart);
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> cartService.updateById(StaticCart.ID, updatedCart));
 
-        Cart actualCart = cartService.add(cartRequest);
-
-        assertEquals(expectedCart.getId(), actualCart.getId());
-        assertEquals(expectedCart.getUserId(), actualCart.getUserId());
+        assertNotNull(exception);
+        assertEquals("Database connection failed", exception.getMessage());
+        verify(cartRepository, times(1)).save(updatedCart);
     }
 
     @Test
-    void testDeleteById_ExistingId() {
-        when(cartRepository.existsById(id)).thenReturn(true);
+    void testDeleteById_Success() {
+        boolean result = cartService.deleteById(StaticCart.ID);
 
-        cartService.deleteById(id);
+        verify(cartRepository).deleteById(StaticCart.ID);
+        assertTrue(result);
+    }
 
-        verify(cartRepository, times(1)).deleteById(id);
+    @Test
+    void testDeleteById_AnyException() {
+        doThrow(new DataAccessException("Database connection failed") {}).when(cartRepository).deleteById(StaticCart.ID);
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> cartService.deleteById(StaticCart.ID));
+
+        assertNotNull(exception);
+        assertEquals("Database connection failed", exception.getMessage());
+        verify(cartRepository, times(1)).deleteById(StaticCart.ID);
     }
 }
-
